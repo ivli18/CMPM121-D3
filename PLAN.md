@@ -28,5 +28,5 @@ Key goal: Get a working prototype where you can pick up and merge tokens on a ma
 - [x] Show what token the player is holding
 - [x] Allow player to merge two equal tokens (crafting)
 - [x] Detect when player creates a value >= 8 → "You win!"
-- [ ] Commit with message "(D3.a complete)"
-- [ ] Deploy to GitHub Pages and verify it works
+- [x] Commit with message "(D3.a complete)"
+- [x] Deploy to GitHub Pages and verify it works
