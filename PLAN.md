@@ -19,14 +19,14 @@ Key goal: Get a working prototype where you can pick up and merge tokens on a ma
 
 ### Steps
 
-- [ ] Set up Leaflet map centered on classroom
-- [ ] Draw one grid cell at player location
-- [ ] Draw a 5x5 grid of cells around player
-- [ ] Use `luck()` to decide which cells have tokens (value 1 or 2)
-- [ ] Display token values visibly in cells
-- [ ] Allow player to click nearby cells to pick up a token
-- [ ] Show what token the player is holding
-- [ ] Allow player to merge two equal tokens (crafting)
-- [ ] Detect when player creates a value >= 8 → "You win!"
+- [X] Set up Leaflet map centered on classroom
+- [X] Draw one grid cell at player location
+- [X] Draw a 5x5 grid of cells around player
+- [X] Use `luck()` to decide which cells have tokens (value 1 or 2)
+- [X] Display token values visibly in cells
+- [X] Allow player to click nearby cells to pick up a token
+- [X] Show what token the player is holding
+- [X] Allow player to merge two equal tokens (crafting)
+- [X] Detect when player creates a value >= 8 → "You win!"
 - [ ] Commit with message "(D3.a complete)"
 - [ ] Deploy to GitHub Pages and verify it works

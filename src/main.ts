@@ -49,7 +49,7 @@ let heldToken: number | null = null;
 
 function updateStatus() {
   statusPanelDiv.innerHTML = heldToken ? `Holding: ${heldToken}` : "Holding: —";
-  if (heldToken === WIN_VALUE) {
+  if (heldToken! >= WIN_VALUE) {
     statusPanelDiv.innerHTML += " 🎉 YOU WIN!";
   }
 }
