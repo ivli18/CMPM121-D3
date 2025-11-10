@@ -1,9 +1,11 @@
 # D3: World of Bits
 
 # Game Design Vision
+
 A puzzle game where you collect and merge number tokens on a map. Start with 1s, combine them into 2s, then 4s, and so on, until you reach a high-value token (like 8) and win.
 
 # Technologies
+
 - TypeScript for game logic
 - Leaflet for map rendering
 - Deno + Vite for build system
@@ -12,9 +14,11 @@ A puzzle game where you collect and merge number tokens on a map. Start with 1s,
 # Assignments
 
 ## D3.a: Core Mechanics (token collection and crafting)
+
 Key goal: Get a working prototype where you can pick up and merge tokens on a map.
 
 ### Steps
+
 - [ ] Set up Leaflet map centered on classroom
 - [ ] Draw one grid cell at player location
 - [ ] Draw a 5x5 grid of cells around player

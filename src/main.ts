@@ -84,20 +84,29 @@ for (let i = -Math.floor(GRID_SIZE / 2); i <= Math.floor(GRID_SIZE / 2); i++) {
     // Only allow interaction if cell is near player
     const isInReach = Math.max(Math.abs(i), Math.abs(j)) <= 3;
 
+    // Prevent double-processing when both marker and rect handlers fire.
+    let consumed = false;
+
     const handleClick = () => {
-      if (!isInReach) return;
+      if (!isInReach || consumed) return;
+
       if (heldToken === null) {
         // Pick up token
+        consumed = true;
         heldToken = value;
         marker.remove();
+        rect.remove();
         updateStatus();
       } else if (heldToken === value) {
         // Merge tokens
+        consumed = true;
         heldToken = value * 2;
         marker.remove();
+        rect.remove();
         updateStatus();
+      } else {
+        // Holding the wrong token: do nothing (token remains)
       }
-      // If holding wrong token, do nothing
     };
 
     if (isInReach) {
