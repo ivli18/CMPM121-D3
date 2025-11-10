@@ -10,3 +10,9 @@
   width: 100%;
   height: 80vh;
 }
+
+.token {
+  color: blue;
+  font: bold 16px sans-serif;
+  text-align: center;
+}
