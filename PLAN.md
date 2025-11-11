@@ -30,3 +30,20 @@ Key goal: Get a working prototype where you can pick up and merge tokens on a ma
 - [x] Detect when player creates a value >= 8 → "You win!"
 - [x] Commit with message "(D3.a complete)"
 - [x] Deploy to GitHub Pages and verify it works
+
+## D3.b: Globe-spanning Gameplay
+
+Key goal: Make the map infinite and coordinate-bound, support viewport-relative visibility, and enable farming via memoryless cells.
+
+### Steps
+
+- [ ] Define `CellCoord` interface: `{ i: number; j: number }` for grid addressing
+- [ ] Write `latLngToCell(lat: number, lng: number): CellCoord`
+- [ ] Write `cellToBounds(cell: CellCoord): [SWLatLng, NELatLng]` for Leaflet rendering
+- [ ] On map 'moveend', recompute visible cells around viewport center
+- [ ] Unmount cells no longer in range; spawn new ones at fringes
+- [ ] Reset cell state (tokens) when unmounted → enables token farming
+- [ ] Update win condition: require crafted token ≥ next threshold (e.g., 16)
+- [ ] Test globe-spanning: pan across IDL, observe seamless cell renewal
+- [ ] Commit with message "(D3.b complete)"
+- [ ] Deploy and verify on GitHub Pages
