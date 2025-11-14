@@ -17,8 +17,6 @@ A puzzle game where you collect and merge number tokens on a map. Start with 1s,
 
 Key goal: Get a working prototype where you can pick up and merge tokens on a map.
 
-### Steps
-
 - [x] Set up Leaflet map centered on classroom
 - [x] Draw one grid cell at player location
 - [x] Draw a 5x5 grid of cells around player
@@ -35,8 +33,6 @@ Key goal: Get a working prototype where you can pick up and merge tokens on a ma
 
 Key goal: Make the map infinite and coordinate-bound, support viewport-relative visibility, and enable farming via memoryless cells.
 
-### Steps
-
 - [x] Define `CellCoord` interface: `{ i: number; j: number }` for grid addressing
 - [x] Write `latLngToCell(lat: number, lng: number): CellCoord`
 - [x] Write `cellToBounds(cell: CellCoord): [SWLatLng, NELatLng]` for Leaflet rendering
@@ -45,5 +41,21 @@ Key goal: Make the map infinite and coordinate-bound, support viewport-relative 
 - [x] Reset cell state (tokens) when unmounted → enables token farming
 - [x] Update win condition: require crafted token ≥ next threshold (e.g., 16)
 - [x] Test globe-spanning: pan across IDL, observe seamless cell renewal
-- [ ] Commit with message "(D3.b complete)"
-- [ ] Deploy and verify on GitHub Pages
+- [x] Commit with message "(D3.b complete)"
+- [x] Deploy and verify on GitHub Pages
+
+## D3.c: Coordination & Communication
+
+- [ ] Set up Firebase project and enable Realtime Database
+- [ ] Install Firebase SDK (`npm install firebase` or use script tag if easier)
+- [ ] Initialize Firebase in your app with config
+- [ ] Write player position to Firebase under a unique client key (e.g., `players/CLIENT_ID`)
+- [ ] Read other players' positions from Firebase and render them as markers
+- [ ] Update player position on map move/pan (debounced or on `moveend`)
+- [ ] Clean up player node on disconnect (`onDisconnect()`)
+- [ ] Share token collection state via Firebase: when a player collects a token, write update
+- [ ] Listen for token state changes and remove tokens from all clients
+- [ ] Ensure crafting rules still work in multi-client context (e.g., only one player can pick up)
+- [ ] Test with two browser tabs: verify positions sync and tokens disappear for both
+- [ ] Commit with message "(D3.c complete)"
+- [ ] Deploy and verify multiplayer works on GitHub Pages
