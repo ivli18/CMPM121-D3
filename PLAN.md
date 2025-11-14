@@ -53,16 +53,16 @@ Key goal: Get a working prototype where you can pick up and merge tokens on a ma
 Key technical challenge: Remember cell state when off-screen\
 Key gameplay challenge: Prevent token farming by re-entering areas
 
-- [ ] Create `Map<string, CellState>` to track modified cells
-- [ ] Define `CellState` interface: `{ hasToken: boolean; value: number }`
-- [ ] Generate `value` once per cell using `luck()` on first access
-- [ ] On token collection:\
+- [x] Create `Map<string, CellState>` to track modified cells
+- [x] Define `CellState` interface: `{ hasToken: boolean; value: number }`
+- [x] Generate `value` once per cell using `luck()` on first access
+- [x] On token collection:\
       - Read current state (if any)\
       - Update `hasToken: false`, preserve `value`\
       - Store back into `cellStates`
-- [ ] In `createCell`, check `cellStates` first:\
+- [x] In `createCell`, check `cellStates` first:\
       - If present → use stored state\
       - If absent → generate new state with `luck()`
-- [ ] Rebuild cells from scratch on scroll — no DOM retention
-- [ ] Test: Move away and back — tokens stay collected, values unchanged
-- [ ] Commit with "(D3.c complete)"
+- [x] Rebuild cells from scratch on scroll — no DOM retention
+- [x] Test: Move away and back — tokens stay collected, values unchanged
+- [x] Commit with "(D3.c complete)"
