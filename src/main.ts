@@ -10,6 +10,11 @@ interface CellCoord {
   j: number;
 }
 
+interface CellState {
+  hasToken: boolean;
+  value: number;
+}
+
 // DOM Elements
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
@@ -57,6 +62,8 @@ const map = leaflet.map(mapDiv, {
   scrollWheelZoom: false,
 });
 
+const cellStates = new Map<string, CellState>();
+
 leaflet
   .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -101,45 +108,63 @@ function cellToBounds(cell: CellCoord): leaflet.LatLngBounds {
 
 function createCell(cell: CellCoord) {
   const bounds = cellToBounds(cell);
-  const key = cellKey(cell.i, cell.j); // Unique string key
+  const key = cellKey(cell.i, cell.j);
 
-  // Deterministic token (same position → same outcome)
-  const hasToken = luck(`token-${key}`) < 0.5;
-  if (!hasToken) return;
+  let state = cellStates.get(key);
+  if (!state) {
+    const tokenRoll = luck(`token-${key}`);
+    const valueRoll = luck(`value-${key}`);
+    state = {
+      hasToken: tokenRoll < 0.5,
+      value: valueRoll < 0.2 ? 2 : 1,
+    };
+    cellStates.set(key, state);
+  }
 
-  const value = luck(`value-${key}`) < 0.2 ? 2 : 1;
+  if (!state.hasToken) return;
+
   const rect = leaflet.rectangle(bounds, {
     color: "lightgreen",
     fillOpacity: 0.3,
   }).addTo(map);
-
   const marker = leaflet.marker(bounds.getCenter(), {
-    icon: leaflet.divIcon({ html: `<b>${value}</b>`, className: "token" }),
+    icon: leaflet.divIcon({
+      html: `<b>${state.value}</b>`,
+      className: "token",
+    }),
   }).addTo(map);
 
   const handleClick = () => {
     const distI = Math.abs(cell.i - playerCell.i);
     const distJ = Math.abs(cell.j - playerCell.j);
     if (Math.max(distI, distJ) > 3) return;
+
     if (heldToken === null) {
-      heldToken = value;
-      rect.remove();
-      marker.remove();
-      renderedCells.delete(key);
-      updateStatus();
-    } else if (heldToken === value) {
-      heldToken = value * 2;
-      rect.remove();
-      marker.remove();
-      renderedCells.delete(key);
-      updateStatus();
+      heldToken = state.value;
+    } else if (heldToken === state.value) {
+      heldToken = state.value * 2;
+    } else {
+      return; // can't collect or merge
     }
+
+    rect.remove();
+    marker.remove();
+    renderedCells.delete(key);
+
+    // Update persistent state
+    const existingState = cellStates.get(key);
+    if (existingState) {
+      existingState.hasToken = false;
+      cellStates.set(key, existingState);
+    }
+
+    updateStatus();
   };
 
   rect.on("click", handleClick);
   marker.on("click", handleClick);
 
-  renderedCells.set(key, { rect, marker, value });
+  renderedCells.set(key, { rect, marker, value: state.value });
 }
 
 function movePlayer(dir: "north" | "south" | "east" | "west") {
