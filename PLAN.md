@@ -44,18 +44,17 @@ Key goal: Make the map infinite and coordinate-bound, support viewport-relative 
 - [x] Commit with message "(D3.b complete)"
 - [x] Deploy and verify on GitHub Pages
 
-## D3.c: Coordination & Communication
+## D3.c: Object persistence
 
-- [ ] Set up Firebase project and enable Realtime Database
-- [ ] Install Firebase SDK (`npm install firebase` or use script tag if easier)
-- [ ] Initialize Firebase in your app with config
-- [ ] Write player position to Firebase under a unique client key (e.g., `players/CLIENT_ID`)
-- [ ] Read other players' positions from Firebase and render them as markers
-- [ ] Update player position on map move/pan (debounced or on `moveend`)
-- [ ] Clean up player node on disconnect (`onDisconnect()`)
-- [ ] Share token collection state via Firebase: when a player collects a token, write update
-- [ ] Listen for token state changes and remove tokens from all clients
-- [ ] Ensure crafting rules still work in multi-client context (e.g., only one player can pick up)
-- [ ] Test with two browser tabs: verify positions sync and tokens disappear for both
-- [ ] Commit with message "(D3.c complete)"
-- [ ] Deploy and verify multiplayer works on GitHub Pages
+Key technical challenge: Remember cell state when off-screen\
+Key gameplay challenge: Prevent token farming by re-entering areas
+
+- [ ] Create `Map<string, CellState>` to track modified cells
+- [ ] Define `CellState` interface: `{ hasToken: boolean; value?: number }`
+- [ ] On token collection, update `cellStates.set(key, { hasToken: false })`
+- [ ] In `createCell`, check `cellStates` first before using `luck()`
+- [ ] Save state when cell is removed (already happens via Map)
+- [ ] Restore state when cell is re-created
+- [ ] Test: Move away and back — no tokens should reappear
+- [ ] Commit with "(D3.c complete)"
+- [ ] Deploy and verify on GitHub Pages
