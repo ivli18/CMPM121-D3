@@ -31,18 +31,22 @@ Key goal: Get a working prototype where you can pick up and merge tokens on a ma
 
 ## D3.b: Globe-spanning Gameplay
 
-Key goal: Make the map infinite and coordinate-bound, support viewport-relative visibility, and enable farming via memoryless cells.
+**Key Goal:** Decouple game logic from screen view by anchoring cells to a global grid (Null Island), tie interaction to player position, and enable simple crafting with a higher victory threshold.
 
-- [x] Define `CellCoord` interface: `{ i: number; j: number }` for grid addressing
-- [x] Write `latLngToCell(lat: number, lng: number): CellCoord`
-- [x] Write `cellToBounds(cell: CellCoord): [SWLatLng, NELatLng]` for Leaflet rendering
-- [x] On map 'moveend', recompute visible cells around viewport center
-- [x] Unmount cells no longer in range; spawn new ones at fringes
-- [x] Reset cell state (tokens) when unmounted → enables token farming
-- [x] Update win condition: require crafted token ≥ next threshold (e.g., 16)
-- [x] Test globe-spanning: pan across IDL, observe seamless cell renewal
-- [x] Commit with message "(D3.b complete)"
-- [x] Deploy and verify on GitHub Pages
+- [x] Define `CellCoord` interface: `{ i: number; j: number }` for global grid addressing
+- [x] Implement `latLngToCell(lat: number, lng: number): CellCoord` using (0,0) origin
+- [x] Implement `cellToBounds(cell: CellCoord): LatLngBounds` for Leaflet rendering
+- [x] Track `playerCell` as logical position in grid units (not just marker lat/lng)
+- [x] Add N/S/E/W buttons to move `playerCell` and update marker position
+- [x] Move map camera via `map.panTo()` when player moves (optional follow)
+- [x] Allow cell interaction only within 3 tiles of `playerCell` (not map center)
+- [x] On `moveend` **and** player move, call `updateVisibleCells()`
+- [x] Respawn cells near map center using deterministic `luck(key)` → enables farming
+- [x] Unmount offscreen cells → memoryless state (intentional for D3.b)
+- [x] Update crafting: double `heldToken` on match; win when `heldToken >= 16`
+- [x] Test globe-spanning: pan across map, cross IDL, verify seamless generation
+- [x] Deploy via GitHub Actions and verify live behavior
+- [x] Commit with accurate message
 
 ## D3.c: Object persistence
 
@@ -57,4 +61,3 @@ Key gameplay challenge: Prevent token farming by re-entering areas
 - [ ] Restore state when cell is re-created
 - [ ] Test: Move away and back — no tokens should reappear
 - [ ] Commit with "(D3.c complete)"
-- [ ] Deploy and verify on GitHub Pages

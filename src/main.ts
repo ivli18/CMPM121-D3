@@ -21,6 +21,13 @@ document.body.append(mapDiv);
 
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
+type Direction = "north" | "south" | "east" | "west";
+["North", "East", "South", "West"].forEach((dir) => {
+  const btn = document.createElement("button");
+  btn.textContent = dir;
+  btn.onclick = () => movePlayer(dir.toLowerCase() as Direction);
+  controlPanelDiv.appendChild(btn);
+});
 document.body.append(statusPanelDiv);
 
 // Constants
@@ -28,6 +35,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
   -122.05703507501151,
 );
+
 const ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
 const WIN_VALUE = 16;
@@ -62,6 +70,11 @@ const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
 playerMarker.bindTooltip("You");
 playerMarker.addTo(map);
 
+const playerCell: CellCoord = latLngToCell(
+  CLASSROOM_LATLNG.lat,
+  CLASSROOM_LATLNG.lng,
+);
+
 // Game State
 let heldToken: number | null = null;
 
@@ -72,14 +85,14 @@ function cellKey(i: number, j: number): string {
 
 function latLngToCell(lat: number, lng: number): CellCoord {
   return {
-    i: Math.floor((lng - CLASSROOM_LATLNG.lng) / TILE_DEGREES),
-    j: Math.floor((lat - CLASSROOM_LATLNG.lat) / TILE_DEGREES),
+    i: Math.floor(lng / TILE_DEGREES),
+    j: Math.floor(lat / TILE_DEGREES),
   };
 }
 
 function cellToBounds(cell: CellCoord): leaflet.LatLngBounds {
-  const lat = CLASSROOM_LATLNG.lat + cell.j * TILE_DEGREES;
-  const lng = CLASSROOM_LATLNG.lng + cell.i * TILE_DEGREES;
+  const lat = cell.j * TILE_DEGREES;
+  const lng = cell.i * TILE_DEGREES;
   return leaflet.latLngBounds(
     [lat, lng],
     [lat + TILE_DEGREES, lng + TILE_DEGREES],
@@ -105,8 +118,9 @@ function createCell(cell: CellCoord) {
   }).addTo(map);
 
   const handleClick = () => {
-    const maxDist = Math.max(Math.abs(cell.i), Math.abs(cell.j));
-    if (maxDist > 3) return; // Too far
+    const distI = Math.abs(cell.i - playerCell.i);
+    const distJ = Math.abs(cell.j - playerCell.j);
+    if (Math.max(distI, distJ) > 3) return;
     if (heldToken === null) {
       heldToken = value;
       rect.remove();
@@ -126,6 +140,27 @@ function createCell(cell: CellCoord) {
   marker.on("click", handleClick);
 
   renderedCells.set(key, { rect, marker, value });
+}
+
+function movePlayer(dir: "north" | "south" | "east" | "west") {
+  switch (dir) {
+    case "north":
+      playerCell.j++;
+      break;
+    case "south":
+      playerCell.j--;
+      break;
+    case "east":
+      playerCell.i++;
+      break;
+    case "west":
+      playerCell.i--;
+      break;
+  }
+  const newPos = cellToBounds(playerCell).getCenter();
+  playerMarker.setLatLng(newPos);
+  map.panTo(newPos); // optional: follow player
+  updateVisibleCells();
 }
 
 function updateStatus() {
