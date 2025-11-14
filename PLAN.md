@@ -54,10 +54,15 @@ Key technical challenge: Remember cell state when off-screen\
 Key gameplay challenge: Prevent token farming by re-entering areas
 
 - [ ] Create `Map<string, CellState>` to track modified cells
-- [ ] Define `CellState` interface: `{ hasToken: boolean; value?: number }`
-- [ ] On token collection, update `cellStates.set(key, { hasToken: false })`
-- [ ] In `createCell`, check `cellStates` first before using `luck()`
-- [ ] Save state when cell is removed (already happens via Map)
-- [ ] Restore state when cell is re-created
-- [ ] Test: Move away and back — no tokens should reappear
+- [ ] Define `CellState` interface: `{ hasToken: boolean; value: number }`
+- [ ] Generate `value` once per cell using `luck()` on first access
+- [ ] On token collection:\
+      - Read current state (if any)\
+      - Update `hasToken: false`, preserve `value`\
+      - Store back into `cellStates`
+- [ ] In `createCell`, check `cellStates` first:\
+      - If present → use stored state\
+      - If absent → generate new state with `luck()`
+- [ ] Rebuild cells from scratch on scroll — no DOM retention
+- [ ] Test: Move away and back — tokens stay collected, values unchanged
 - [ ] Commit with "(D3.c complete)"
