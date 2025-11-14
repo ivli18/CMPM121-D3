@@ -5,6 +5,11 @@ import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
 import "./style.css";
 
+interface CellCoord {
+  i: number;
+  j: number;
+}
+
 // DOM Elements
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
@@ -25,8 +30,14 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 );
 const ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
-const GRID_SIZE = 5;
-const WIN_VALUE = 8;
+const WIN_VALUE = 16;
+
+// Track rendered cells
+const renderedCells = new Map<string, {
+  rect: leaflet.Rectangle;
+  marker: leaflet.Marker;
+  value: number;
+}>();
 
 // Map Setup
 const map = leaflet.map(mapDiv, {
@@ -37,7 +48,14 @@ const map = leaflet.map(mapDiv, {
   zoomControl: false,
   scrollWheelZoom: false,
 });
-leaflet.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+
+leaflet
+  .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  })
+  .addTo(map);
 
 // Player Marker
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
@@ -47,73 +65,109 @@ playerMarker.addTo(map);
 // Game State
 let heldToken: number | null = null;
 
+// Helper Functions
+function cellKey(i: number, j: number): string {
+  return `${i},${j}`;
+}
+
+function latLngToCell(lat: number, lng: number): CellCoord {
+  return {
+    i: Math.floor((lng - CLASSROOM_LATLNG.lng) / TILE_DEGREES),
+    j: Math.floor((lat - CLASSROOM_LATLNG.lat) / TILE_DEGREES),
+  };
+}
+
+function cellToBounds(cell: CellCoord): leaflet.LatLngBounds {
+  const lat = CLASSROOM_LATLNG.lat + cell.j * TILE_DEGREES;
+  const lng = CLASSROOM_LATLNG.lng + cell.i * TILE_DEGREES;
+  return leaflet.latLngBounds(
+    [lat, lng],
+    [lat + TILE_DEGREES, lng + TILE_DEGREES],
+  );
+}
+
+function createCell(cell: CellCoord) {
+  const bounds = cellToBounds(cell);
+  const key = cellKey(cell.i, cell.j); // Unique string key
+
+  // Deterministic token (same position → same outcome)
+  const hasToken = luck(`token-${key}`) < 0.5;
+  if (!hasToken) return;
+
+  const value = luck(`value-${key}`) < 0.2 ? 2 : 1;
+  const rect = leaflet.rectangle(bounds, {
+    color: "lightgreen",
+    fillOpacity: 0.3,
+  }).addTo(map);
+
+  const marker = leaflet.marker(bounds.getCenter(), {
+    icon: leaflet.divIcon({ html: `<b>${value}</b>`, className: "token" }),
+  }).addTo(map);
+
+  const handleClick = () => {
+    const maxDist = Math.max(Math.abs(cell.i), Math.abs(cell.j));
+    if (maxDist > 3) return; // Too far
+    if (heldToken === null) {
+      heldToken = value;
+      rect.remove();
+      marker.remove();
+      renderedCells.delete(key);
+      updateStatus();
+    } else if (heldToken === value) {
+      heldToken = value * 2;
+      rect.remove();
+      marker.remove();
+      renderedCells.delete(key);
+      updateStatus();
+    }
+  };
+
+  rect.on("click", handleClick);
+  marker.on("click", handleClick);
+
+  renderedCells.set(key, { rect, marker, value });
+}
+
 function updateStatus() {
   statusPanelDiv.innerHTML = heldToken ? `Holding: ${heldToken}` : "Holding: —";
-  if (heldToken! >= WIN_VALUE) {
+  if (heldToken !== null && heldToken >= WIN_VALUE) {
     statusPanelDiv.innerHTML += " 🎉 YOU WIN!";
   }
 }
-updateStatus();
 
-// Spawn tokens on grid
-for (let i = -Math.floor(GRID_SIZE / 2); i <= Math.floor(GRID_SIZE / 2); i++) {
-  for (
-    let j = -Math.floor(GRID_SIZE / 2);
-    j <= Math.floor(GRID_SIZE / 2);
-    j++
-  ) {
-    const hasToken = luck([i, j, "token"].toString()) < 0.5;
-    if (!hasToken) continue;
+function updateVisibleCells() {
+  const center = map.getCenter();
+  const centerCell = latLngToCell(center.lat, center.lng);
 
-    const value = luck([i, j, "tokenValue"].toString()) < 0.2 ? 2 : 1;
-    const lat = CLASSROOM_LATLNG.lat + i * TILE_DEGREES;
-    const lng = CLASSROOM_LATLNG.lng + j * TILE_DEGREES;
-    const bounds = leaflet.latLngBounds([
-      [lat, lng],
-      [lat + TILE_DEGREES, lng + TILE_DEGREES],
-    ]);
+  const newCellsNeeded = new Set<string>();
+  for (let di = -2; di <= 2; di++) {
+    for (let dj = -2; dj <= 2; dj++) {
+      newCellsNeeded.add(cellKey(centerCell.i + di, centerCell.j + dj));
+    }
+  }
 
-    const rect = leaflet.rectangle(bounds, {
-      color: "blue",
-      fillOpacity: 0.1,
-    }).addTo(map);
+  const currentCells = new Set(renderedCells.keys());
 
-    const marker = leaflet.marker(bounds.getCenter(), {
-      icon: leaflet.divIcon({ html: `<b>${value}</b>`, className: "token" }),
-    }).addTo(map);
-    // Only allow interaction if cell is near player
-    const isInReach = Math.max(Math.abs(i), Math.abs(j)) <= 3;
+  // Add missing cells
+  for (const key of newCellsNeeded) {
+    if (!currentCells.has(key)) {
+      const [i, j] = key.split(",").map(Number);
+      createCell({ i, j });
+    }
+  }
 
-    // Prevent double-processing when both marker and rect handlers fire.
-    let consumed = false;
-
-    const handleClick = () => {
-      if (!isInReach || consumed) return;
-
-      if (heldToken === null) {
-        // Pick up token
-        consumed = true;
-        heldToken = value;
-        marker.remove();
-        rect.remove();
-        updateStatus();
-      } else if (heldToken === value) {
-        // Merge tokens
-        consumed = true;
-        heldToken = value * 2;
-        marker.remove();
-        rect.remove();
-        updateStatus();
-      } else {
-        // Holding the wrong token: do nothing (token remains)
-      }
-    };
-
-    if (isInReach) {
-      rect.on("click", handleClick);
-      marker.on("click", handleClick);
-    } else {
-      rect.bindTooltip("Too far away!");
+  // Remove cells no longer in view
+  for (const key of currentCells) {
+    if (!newCellsNeeded.has(key)) {
+      const { rect, marker } = renderedCells.get(key)!;
+      rect.remove();
+      marker.remove();
+      renderedCells.delete(key);
     }
   }
 }
+
+// Initial Setup
+map.on("moveend", updateVisibleCells);
+updateVisibleCells();
+updateStatus();

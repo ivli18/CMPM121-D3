@@ -37,13 +37,13 @@ Key goal: Make the map infinite and coordinate-bound, support viewport-relative 
 
 ### Steps
 
-- [ ] Define `CellCoord` interface: `{ i: number; j: number }` for grid addressing
-- [ ] Write `latLngToCell(lat: number, lng: number): CellCoord`
-- [ ] Write `cellToBounds(cell: CellCoord): [SWLatLng, NELatLng]` for Leaflet rendering
-- [ ] On map 'moveend', recompute visible cells around viewport center
-- [ ] Unmount cells no longer in range; spawn new ones at fringes
-- [ ] Reset cell state (tokens) when unmounted → enables token farming
-- [ ] Update win condition: require crafted token ≥ next threshold (e.g., 16)
-- [ ] Test globe-spanning: pan across IDL, observe seamless cell renewal
+- [x] Define `CellCoord` interface: `{ i: number; j: number }` for grid addressing
+- [x] Write `latLngToCell(lat: number, lng: number): CellCoord`
+- [x] Write `cellToBounds(cell: CellCoord): [SWLatLng, NELatLng]` for Leaflet rendering
+- [x] On map 'moveend', recompute visible cells around viewport center
+- [x] Unmount cells no longer in range; spawn new ones at fringes
+- [x] Reset cell state (tokens) when unmounted → enables token farming
+- [x] Update win condition: require crafted token ≥ next threshold (e.g., 16)
+- [x] Test globe-spanning: pan across IDL, observe seamless cell renewal
 - [ ] Commit with message "(D3.b complete)"
 - [ ] Deploy and verify on GitHub Pages
