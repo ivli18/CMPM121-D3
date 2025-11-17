@@ -50,19 +50,37 @@ Key goal: Get a working prototype where you can pick up and merge tokens on a ma
 
 ## D3.c: Object persistence
 
-Key technical challenge: Remember cell state when off-screen\
+Key technical challenge: Remember cell state when off-screen
 Key gameplay challenge: Prevent token farming by re-entering areas
 
 - [x] Create `Map<string, CellState>` to track modified cells
 - [x] Define `CellState` interface: `{ hasToken: boolean; value: number }`
 - [x] Generate `value` once per cell using `luck()` on first access
-- [x] On token collection:\
-      - Read current state (if any)\
-      - Update `hasToken: false`, preserve `value`\
+- [x] On token collection:
+      - Read current state (if any)
+      - Update `hasToken: false`, preserve `value`
       - Store back into `cellStates`
-- [x] In `createCell`, check `cellStates` first:\
-      - If present → use stored state\
+- [x] In `createCell`, check `cellStates` first:
+      - If present → use stored state
       - If absent → generate new state with `luck()`
 - [x] Rebuild cells from scratch on scroll — no DOM retention
 - [x] Test: Move away and back — tokens stay collected, values unchanged
 - [x] Commit with "(D3.c complete)"
+
+## D3.d: Gameplay Across Real-world Space and Time
+
+- [ ] Use `navigator.geolocation.watchPosition()` to update player position from real-world movement
+- [ ] Convert GPS coordinates to grid cell using `latLngToCell()` and update `playerCell`
+- [ ] Implement `MovementController` interface with `start()`, `stop()`, and `onMove` callback
+- [ ] Create `ButtonMovement` class that uses N/S/E/W buttons (existing logic)
+- [ ] Create `GeolocationMovement` class that uses GPS updates
+- [ ] Route all movement through active controller (Facade pattern)
+- [ ] Support mode selection via query string: `?movement=buttons` or `?movement=geolocation`
+- [ ] (Optional) Add on-screen button to toggle movement modes
+- [ ] Save game state (`cellStates`, `heldToken`) to `localStorage` on exit
+- [ ] Load game state from `localStorage` on page load
+- [ ] Add "New Game" button that clears `localStorage` and resets game
+- [ ] Support `?reset=true` URL param to start fresh
+- [ ] Test geolocation on a real mobile device
+- [ ] Verify game resumes correctly after page reload
+- [ ] Deploy via GitHub Actions and confirm live version works
