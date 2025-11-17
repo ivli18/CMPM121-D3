@@ -1,17 +1,17 @@
 # D3: World of Bits
 
-# Game Design Vision
+## Game Design Vision
 
 A puzzle game where you collect and merge number tokens on a map. Start with 1s, combine them into 2s, then 4s, and so on, until you reach a high-value token (like 8) and win.
 
-# Technologies
+## Technologies
 
 - TypeScript for game logic
 - Leaflet for map rendering
 - Deno + Vite for build system
 - GitHub Pages for deployment
 
-# Assignments
+## Assignments
 
 ## D3.a: Core Mechanics (token collection and crafting)
 
