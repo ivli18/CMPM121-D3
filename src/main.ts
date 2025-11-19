@@ -5,6 +5,9 @@ import "./_leafletWorkaround.ts";
 import luck from "./_luck.ts";
 import "./style.css";
 
+/* ============================================================
+   Types
+   ============================================================ */
 interface CellCoord {
   i: number;
   j: number;
@@ -15,44 +18,70 @@ interface CellState {
   value: number;
 }
 
-// DOM Elements
+type Direction = "north" | "south" | "east" | "west";
+
+/* ============================================================
+   DOM Setup
+   ============================================================ */
+
+// Control panel
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
 document.body.append(controlPanelDiv);
 
+// Map div
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
 document.body.append(mapDiv);
 
+// Status panel
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
-type Direction = "north" | "south" | "east" | "west";
+document.body.append(statusPanelDiv);
+
+// Movement buttons
 ["North", "East", "South", "West"].forEach((dir) => {
   const btn = document.createElement("button");
   btn.textContent = dir;
   btn.onclick = () => movePlayer(dir.toLowerCase() as Direction);
   controlPanelDiv.appendChild(btn);
 });
-document.body.append(statusPanelDiv);
 
-// Constants
+/* ============================================================
+   Constants
+   ============================================================ */
 const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
   -122.05703507501151,
 );
 
-const ZOOM_LEVEL = 19;
 const TILE_DEGREES = 1e-4;
+const ZOOM_LEVEL = 19;
 const WIN_VALUE = 16;
 
-// Track rendered cells
-const renderedCells = new Map<string, {
-  rect: leaflet.Rectangle;
-  marker: leaflet.Marker;
-  value: number;
-}>();
+/* ============================================================
+   State Containers
+   ============================================================ */
 
-// Map Setup
+// Map of cell states
+const cellStates = new Map<string, CellState>();
+
+// Rendered cells on screen
+const renderedCells = new Map<
+  string,
+  { rect: leaflet.Rectangle; marker: leaflet.Marker | null; value: number }
+>();
+
+// Player state
+let heldToken: number | null = null;
+const playerCell: CellCoord = latLngToCell(
+  CLASSROOM_LATLNG.lat,
+  CLASSROOM_LATLNG.lng,
+);
+
+/* ============================================================
+   Map Setup
+   ============================================================ */
 const map = leaflet.map(mapDiv, {
   center: CLASSROOM_LATLNG,
   zoom: ZOOM_LEVEL,
@@ -62,8 +91,6 @@ const map = leaflet.map(mapDiv, {
   scrollWheelZoom: false,
 });
 
-const cellStates = new Map<string, CellState>();
-
 leaflet
   .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,
@@ -72,20 +99,26 @@ leaflet
   })
   .addTo(map);
 
-// Player Marker
-const playerMarker = leaflet.marker(CLASSROOM_LATLNG);
-playerMarker.bindTooltip("You");
-playerMarker.addTo(map);
+// Player marker
+const playerMarker = leaflet.marker(CLASSROOM_LATLNG)
+  .bindTooltip("You")
+  .addTo(map);
 
-const playerCell: CellCoord = latLngToCell(
-  CLASSROOM_LATLNG.lat,
-  CLASSROOM_LATLNG.lng,
-);
+// Interaction range
+const interactionRadius = leaflet.circle(playerMarker.getLatLng(), {
+  radius: 3 * TILE_DEGREES * 111000, // degrees → meters
+  fillColor: "blue",
+  fillOpacity: 0.1,
+  stroke: true,
+  color: "blue",
+  weight: 1,
+  dashArray: "5,5",
+}).addTo(map);
 
-// Game State
-let heldToken: number | null = null;
+/* ============================================================
+   Helper Functions
+   ============================================================ */
 
-// Helper Functions
 function cellKey(i: number, j: number): string {
   return `${i},${j}`;
 }
@@ -106,68 +139,115 @@ function cellToBounds(cell: CellCoord): leaflet.LatLngBounds {
   );
 }
 
+function getInitialTokenValue(key: string): number {
+  const l = luck(`value-${key}`);
+  if (l < 0.01) return 8;
+  if (l < 0.05) return 4;
+  if (l < 0.25) return 2;
+  return 1;
+}
+
+/* ============================================================
+   Cell Rendering + Interaction
+   ============================================================ */
+
 function createCell(cell: CellCoord) {
   const bounds = cellToBounds(cell);
   const key = cellKey(cell.i, cell.j);
 
+  // Ensure cell state exists
   let state = cellStates.get(key);
   if (!state) {
     const tokenRoll = luck(`token-${key}`);
-    const valueRoll = luck(`value-${key}`);
     state = {
       hasToken: tokenRoll < 0.5,
-      value: valueRoll < 0.2 ? 2 : 1,
+      value: getInitialTokenValue(key),
     };
     cellStates.set(key, state);
   }
 
-  if (!state.hasToken) return;
-
+  // Rect (grid cell)
   const rect = leaflet.rectangle(bounds, {
-    color: "lightgreen",
-    fillOpacity: 0.3,
-  }).addTo(map);
-  const marker = leaflet.marker(bounds.getCenter(), {
-    icon: leaflet.divIcon({
-      html: `<b>${state.value}</b>`,
-      className: "token",
-    }),
+    color: state.hasToken ? "lightgreen" : "gray",
+    fillOpacity: state.hasToken ? 0.3 : 0.05,
+    weight: 1,
   }).addTo(map);
 
-  const handleClick = () => {
+  // Token marker
+  let marker: leaflet.Marker | null = null;
+  if (state.hasToken) {
+    marker = leaflet.marker(bounds.getCenter(), {
+      icon: leaflet.divIcon({
+        html: `<b>${state.value}</b>`,
+        className: "token",
+      }),
+    }).addTo(map);
+  }
+
+  // Click handler
+  rect.on("click", () => {
     const distI = Math.abs(cell.i - playerCell.i);
     const distJ = Math.abs(cell.j - playerCell.j);
     if (Math.max(distI, distJ) > 3) return;
 
     if (heldToken === null) {
-      heldToken = state.value;
-    } else if (heldToken === state.value) {
-      heldToken = state.value * 2;
+      if (state.hasToken) {
+        heldToken = state.value;
+        state.hasToken = false;
+        cellStates.set(key, state);
+
+        if (marker) {
+          marker.remove();
+          marker = null;
+        }
+
+        rect.setStyle({ fillOpacity: 0.05, color: "gray" });
+        updateStatus();
+      }
     } else {
-      return; // can't collect or merge
+      if (state.hasToken) {
+        if (heldToken === state.value) {
+          heldToken = heldToken * 2;
+          state.hasToken = false;
+          cellStates.set(key, state);
+
+          if (marker) {
+            marker.remove();
+            marker = null;
+          }
+
+          rect.setStyle({ fillOpacity: 0.05, color: "gray" });
+          updateStatus();
+        }
+      } else {
+        // Deposit token
+        state.hasToken = true;
+        state.value = heldToken;
+        cellStates.set(key, state);
+
+        marker = leaflet.marker(bounds.getCenter(), {
+          icon: leaflet.divIcon({
+            html: `<b>${heldToken}</b>`,
+            className: "token",
+          }),
+        }).addTo(map);
+
+        rect.setStyle({ fillOpacity: 0.3, color: "lightgreen" });
+        heldToken = null;
+        updateStatus();
+      }
     }
+  });
 
-    rect.remove();
-    marker.remove();
-    renderedCells.delete(key);
-
-    // Update persistent state
-    const existingState = cellStates.get(key);
-    if (existingState) {
-      existingState.hasToken = false;
-      cellStates.set(key, existingState);
-    }
-
-    updateStatus();
-  };
-
-  rect.on("click", handleClick);
-  marker.on("click", handleClick);
-
+  // Store render info
   renderedCells.set(key, { rect, marker, value: state.value });
 }
 
-function movePlayer(dir: "north" | "south" | "east" | "west") {
+/* ============================================================
+   Player Movement
+   ============================================================ */
+
+function movePlayer(dir: Direction) {
   switch (dir) {
     case "north":
       playerCell.j++;
@@ -182,11 +262,18 @@ function movePlayer(dir: "north" | "south" | "east" | "west") {
       playerCell.i--;
       break;
   }
+
   const newPos = cellToBounds(playerCell).getCenter();
   playerMarker.setLatLng(newPos);
-  map.panTo(newPos); // optional: follow player
+  interactionRadius.setLatLng(newPos);
+  map.panTo(newPos);
+
   updateVisibleCells();
 }
+
+/* ============================================================
+   Status + Visible Cell Management
+   ============================================================ */
 
 function updateStatus() {
   statusPanelDiv.innerHTML = heldToken ? `Holding: ${heldToken}` : "Holding: —";
@@ -196,38 +283,43 @@ function updateStatus() {
 }
 
 function updateVisibleCells() {
-  const center = map.getCenter();
-  const centerCell = latLngToCell(center.lat, center.lng);
+  const bounds = map.getBounds();
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+
+  const minCell = latLngToCell(sw.lat, sw.lng);
+  const maxCell = latLngToCell(ne.lat, ne.lng);
 
   const newCellsNeeded = new Set<string>();
-  for (let di = -2; di <= 2; di++) {
-    for (let dj = -2; dj <= 2; dj++) {
-      newCellsNeeded.add(cellKey(centerCell.i + di, centerCell.j + dj));
+
+  for (let i = minCell.i - 1; i <= maxCell.i + 1; i++) {
+    for (let j = minCell.j - 1; j <= maxCell.j + 1; j++) {
+      newCellsNeeded.add(cellKey(i, j));
     }
   }
 
-  const currentCells = new Set(renderedCells.keys());
-
-  // Add missing cells
+  // Add new cells
   for (const key of newCellsNeeded) {
-    if (!currentCells.has(key)) {
+    if (!renderedCells.has(key)) {
       const [i, j] = key.split(",").map(Number);
       createCell({ i, j });
     }
   }
 
-  // Remove cells no longer in view
-  for (const key of currentCells) {
+  // Remove cells out of range
+  for (const key of renderedCells.keys()) {
     if (!newCellsNeeded.has(key)) {
       const { rect, marker } = renderedCells.get(key)!;
       rect.remove();
-      marker.remove();
+      if (marker) marker.remove();
       renderedCells.delete(key);
     }
   }
 }
 
-// Initial Setup
+/* ============================================================
+   Initialization
+   ============================================================ */
 map.on("moveend", updateVisibleCells);
 updateVisibleCells();
 updateStatus();
