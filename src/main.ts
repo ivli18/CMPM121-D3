@@ -43,7 +43,6 @@ document.body.append(statusPanelDiv);
 ["North", "East", "South", "West"].forEach((dir) => {
   const btn = document.createElement("button");
   btn.textContent = dir;
-  btn.onclick = () => movePlayer(dir.toLowerCase() as Direction);
   controlPanelDiv.appendChild(btn);
 });
 
@@ -323,3 +322,90 @@ function updateVisibleCells() {
 map.on("moveend", updateVisibleCells);
 updateVisibleCells();
 updateStatus();
+
+interface MovementController {
+  start(): void;
+  stop(): void;
+  onMove?: (cell: CellCoord) => void;
+}
+
+class ButtonMovement implements MovementController {
+  onMove?: (cell: CellCoord) => void;
+  private buttons: HTMLButtonElement[] = [];
+
+  constructor(buttonsSelector = "#controlPanel button") {
+    this.buttons = Array.from(
+      document.querySelectorAll(buttonsSelector),
+    ) as HTMLButtonElement[];
+
+    // Rebind click handlers so they go through the facade-managed path.
+    this.buttons.forEach((btn) => {
+      // keep any existing inline onclick by preserving it
+      const existing = btn.onclick;
+      btn.onclick = (ev) => {
+        const dir = (btn.textContent || "").toLowerCase() as Direction;
+        // Use the canonical move function so effect is identical.
+        movePlayer(dir);
+        // notify listeners if any
+        if (this.onMove) this.onMove(playerCell);
+        // call previous handler if present
+        if (typeof existing === "function") existing.call(btn, ev);
+      };
+    });
+  }
+
+  start() {
+    // enable the buttons (they exist already)
+    this.buttons.forEach((b) => (b.disabled = false));
+  }
+
+  stop() {
+    this.buttons.forEach((b) => (b.disabled = true));
+  }
+}
+
+class MovementFacade {
+  private controllers: Record<string, MovementController> = {};
+  private activeName: string | null = null;
+
+  register(name: string, controller: MovementController) {
+    this.controllers[name] = controller;
+  }
+
+  activate(name: string) {
+    if (this.activeName && this.controllers[this.activeName]) {
+      this.controllers[this.activeName].stop();
+    }
+    const c = this.controllers[name];
+    if (!c) {
+      console.warn("Movement controller not registered:", name);
+      return;
+    }
+    this.activeName = name;
+    c.start();
+    c.onMove = () => {
+      // default reaction: update UI
+      updateStatus();
+      // (other reactions can be attached by registering controllers externally)
+    };
+  }
+
+  deactivate() {
+    if (this.activeName && this.controllers[this.activeName]) {
+      this.controllers[this.activeName].stop();
+    }
+    this.activeName = null;
+  }
+
+  getActive(): string | null {
+    return this.activeName;
+  }
+}
+
+// instantiate and hook up buttons-based controller
+const movementFacade = new MovementFacade();
+const buttonMovement = new ButtonMovement();
+movementFacade.register("buttons", buttonMovement);
+
+// activate buttons by default
+movementFacade.activate("buttons");
