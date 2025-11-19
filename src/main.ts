@@ -380,7 +380,13 @@ class GeolocationMovement implements MovementController {
   }
   private handlePosition(pos: GeolocationPosition) {
     const { latitude: lat, longitude: lng } = pos.coords;
-    this.onMove?.(latLngToCell(lat, lng));
+
+    // Convert GPS → grid cell
+    const newCell = latLngToCell(lat, lng);
+
+    // Update global playerCell
+    movePlayerToCell(newCell);
+    this.onMove?.(newCell);
   }
 }
 
@@ -417,8 +423,7 @@ movementFacade.activate("buttons");
 
 const geoMovement = new GeolocationMovement();
 movementFacade.register("geolocation", geoMovement);
-geoMovement.onMove = (newCell) => {
-  movePlayerToCell(newCell);
+geoMovement.onMove = () => {
   updateStatus();
 };
 
@@ -445,4 +450,31 @@ toggleBtn.onclick = () => {
     movementFacade.activate("buttons");
   } else movementFacade.activate("geolocation");
   updateToggleButtonText();
+};
+
+const RESET_GAME = params.get("reset") === "true";
+
+if (RESET_GAME) {
+  localStorage.removeItem(SAVE_KEY);
+  cellStates.clear();
+  renderedCells.forEach(({ rect, marker }) => {
+    rect.remove();
+    if (marker) marker.remove();
+  });
+  renderedCells.clear();
+  heldToken = null;
+  playerCell.i = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng).i;
+  playerCell.j = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng).j;
+  updateVisibleCells();
+  updateStatus();
+}
+
+const newGameBtn = document.createElement("button");
+newGameBtn.textContent = "New Game";
+newGameBtn.style.cssText = "position:absolute;top:40px;right:10px;z-index:1000";
+document.body.appendChild(newGameBtn);
+
+newGameBtn.onclick = () => {
+  localStorage.removeItem(SAVE_KEY);
+  location.href = location.pathname; // reload without query params
 };

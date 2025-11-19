@@ -71,15 +71,15 @@ Key gameplay challenge: Prevent token farming by re-entering areas
 
 - [ ] Use `navigator.geolocation.watchPosition()` to update player position from real-world movement
 - [ ] Convert GPS coordinates to grid cell using `latLngToCell()` and update `playerCell`
-- [ ] Implement `MovementController` interface with `start()`, `stop()`, and `onMove` callback
+- [x] Implement `MovementController` interface with `start()`, `stop()`, and `onMove` callback
 - [x] Create `ButtonMovement` class that uses N/S/E/W buttons (existing logic)
 - [ ] Create `GeolocationMovement` class that uses GPS updates
 - [x] Route all movement through active controller (Facade pattern)
 - [ ] Support mode selection via query string: `?movement=buttons` or `?movement=geolocation`
-- [ ] (Optional) Add on-screen button to toggle movement modes
-- [ ] Save game state (`cellStates`, `heldToken`) to `localStorage` on exit
-- [ ] Load game state from `localStorage` on page load
-- [ ] Add "New Game" button that clears `localStorage` and resets game
+- [x] (Optional) Add on-screen button to toggle movement modes
+- [x] Save game state (`cellStates`, `heldToken`) to `localStorage` on exit
+- [x] Load game state from `localStorage` on page load
+- [x] Add "New Game" button that clears `localStorage` and resets game
 - [ ] Support `?reset=true` URL param to start fresh
 - [ ] Test geolocation on a real mobile device
 - [ ] Verify game resumes correctly after page reload
