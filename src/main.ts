@@ -42,7 +42,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 );
 const TILE_DEGREES = 1e-4;
 const ZOOM_LEVEL = 19;
-const WIN_VALUE = 16;
+const WIN_VALUE = 64;
 
 // --- State ---
 const cellStates = new Map<string, CellState>();
@@ -82,6 +82,7 @@ const interactionRadius = leaflet.circle(playerMarker.getLatLng(), {
   color: "blue",
   weight: 1,
   dashArray: "5,5",
+  interactive: false,
 }).addTo(map);
 
 // --- Helpers ---
@@ -142,7 +143,7 @@ function createCell(cell: CellCoord) {
     }).addTo(map);
   }
 
-  rect.on("click", () => handleCellClick(cell, rect, marker));
+  rect.on("click", () => handleCellClick(cell));
 
   // Save rendered info
   renderedCells.set(key, { rect, marker, value: state.value });
@@ -150,10 +151,11 @@ function createCell(cell: CellCoord) {
 
 function handleCellClick(
   cell: CellCoord,
-  rect: leaflet.Rectangle,
-  marker: leaflet.Marker | null,
 ) {
   const key = cellKey(cell.i, cell.j);
+  const entry = renderedCells.get(key)!;
+  const rect = entry.rect;
+  let marker = entry.marker;
   const state = cellStates.get(key)!;
 
   const distI = Math.abs(cell.i - playerCell.i);
@@ -190,7 +192,7 @@ function handleCellClick(
       heldToken = null;
     }
   }
-
+  renderedCells.set(key, { rect, marker, value: state.value });
   cellStates.set(key, state);
   updateStatus();
   saveGameState();
