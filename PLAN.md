@@ -69,18 +69,18 @@ Key gameplay challenge: Prevent token farming by re-entering areas
 
 ## D3.d: Gameplay Across Real-world Space and Time
 
-- [ ] Use `navigator.geolocation.watchPosition()` to update player position from real-world movement
-- [ ] Convert GPS coordinates to grid cell using `latLngToCell()` and update `playerCell`
+- [x] Use `navigator.geolocation.watchPosition()` to update player position from real-world movement
+- [x] Convert GPS coordinates to grid cell using `latLngToCell()` and update `playerCell`
 - [x] Implement `MovementController` interface with `start()`, `stop()`, and `onMove` callback
 - [x] Create `ButtonMovement` class that uses N/S/E/W buttons (existing logic)
-- [ ] Create `GeolocationMovement` class that uses GPS updates
+- [x] Create `GeolocationMovement` class that uses GPS updates
 - [x] Route all movement through active controller (Facade pattern)
 - [ ] Support mode selection via query string: `?movement=buttons` or `?movement=geolocation`
 - [x] (Optional) Add on-screen button to toggle movement modes
 - [x] Save game state (`cellStates`, `heldToken`) to `localStorage` on exit
 - [x] Load game state from `localStorage` on page load
 - [x] Add "New Game" button that clears `localStorage` and resets game
-- [ ] Support `?reset=true` URL param to start fresh
-- [ ] Test geolocation on a real mobile device
-- [ ] Verify game resumes correctly after page reload
-- [ ] Deploy via GitHub Actions and confirm live version works
+- [x] Support `?reset=true` URL param to start fresh
+- [x] Test geolocation on a real mobile device
+- [x] Verify game resumes correctly after page reload
+- [x] Deploy via GitHub Actions and confirm live version works
